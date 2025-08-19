@@ -7,6 +7,9 @@ import morgan from "morgan";
 /* ROUTE IMPORTS */
 import dashboardRoutes from "./routes/dashboardRoutes";
 import productRoutes from "./routes/productRoutes";
+import orderRoutes from "./routes/orderRoutes";
+import marketingRoutes from "./routes/marketingRoutes";
+import financesRoutes from "./routes/financesRoutes";
 import userRoutes from "./routes/userRoutes";
 import expenseRoutes from "./routes/expenseRoutes";
 
@@ -24,6 +27,9 @@ app.use(cors());
 /* ROUTES */
 app.use("/dashboard", dashboardRoutes); // http://localhost:8000/dashboard
 app.use("/products", productRoutes); // http://localhost:8000/products
+app.use("/orders", orderRoutes); // http://localhost:8000/orders
+app.use("/marketing", marketingRoutes); // http://localhost:8000/marketing
+app.use("/finances", financesRoutes); // http://localhost:8000/finances
 app.use("/users", userRoutes); // http://localhost:8000/users
 app.use("/expenses", expenseRoutes); // http://localhost:8000/expenses
 

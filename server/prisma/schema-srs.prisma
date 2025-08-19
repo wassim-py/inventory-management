@@ -1,0 +1,210 @@
+// WE Brand OS - Complete Schema as per SRS v1.4
+// This schema implements all requirements from the Software Requirements Specification
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Core Product Management
+model Products {
+  productId String @id @default(cuid())
+  name      String
+  category  String
+  
+  // Relations
+  variants          Variants[]
+  marketingCampaigns MarketingCampaigns[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Variants {
+  sku                    String @id
+  productId              String
+  size                   String
+  color                  String
+  costPrice              Float  @map("cost_price")
+  standardSellingPrice   Float  @map("standard_selling_price")
+  stockOnHand           Int    @map("stock_on_hand")
+  
+  // Relations
+  product       Products @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  orderLineItems OrderLineItems[]
+  stockHistory   StockHistory[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Stock Management
+model StockHistory {
+  historyId     String   @id @default(cuid())
+  sku           String
+  changeType    String   // 'IN', 'OUT', 'ADJUSTMENT'
+  quantityChange Int
+  previousStock Int
+  newStock      Int
+  reason        String
+  orderId       String?
+  
+  // Relations
+  variant Variants @relation(fields: [sku], references: [sku])
+  order   Orders?  @relation(fields: [orderId], references: [orderId])
+  
+  createdAt DateTime @default(now())
+}
+
+// Shipping Configuration
+model ShippingZones {
+  wilaya        String @id
+  stopdeskPrice Float  @map("stopdesk_price")
+  domicilePrice Float  @map("domicile_price")
+  
+  // Relations
+  orders Orders[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Financial Management
+model CurrencyPurchases {
+  purchaseId     String   @id @default(cuid())
+  purchaseDate   DateTime @map("purchase_date")
+  currency       String
+  amountBought   Float    @map("amount_bought")
+  exchangeRatePaid Float  @map("exchange_rate_paid")
+  
+  createdAt DateTime @default(now())
+}
+
+model MarketingCampaigns {
+  campaignId      String   @id @default(cuid())
+  campaignName    String   @map("campaign_name")
+  productId       String
+  budgetAllocated Float    @map("budget_allocated")
+  startDate       DateTime @map("start_date")
+  endDate         DateTime @map("end_date")
+  status          CampaignStatus @default(PENDING)
+  
+  // Relations
+  product Products @relation(fields: [productId], references: [productId])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PENDING
+  PAUSED
+  ENDED
+}
+
+// Order Management
+model Orders {
+  orderId        String      @id @default(cuid())
+  customerName   String      @map("customer_name")
+  phoneNumber    String      @map("phone_number")
+  address        String
+  orderDate      DateTime    @map("order_date") @default(now())
+  status         OrderStatus @default(NEW)
+  discount       Float       @default(0)
+  shippingMethod String      @map("shipping_method")
+  wilaya         String
+  note           String?
+  
+  // Calculated fields
+  subtotal       Float       @default(0)
+  shippingPrice  Float       @map("shipping_price") @default(0)
+  finalPrice     Float       @map("final_price") @default(0)
+  
+  // Relations
+  shippingZone   ShippingZones @relation(fields: [wilaya], references: [wilaya])
+  orderLineItems OrderLineItems[]
+  stockHistory   StockHistory[]
+  financesLedger FinancesLedger[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum OrderStatus {
+  NEW
+  SHIPPED
+  DELIVERED
+  RETURNED
+  CANCELLED
+}
+
+model OrderLineItems {
+  lineItemId     String @id @default(cuid())
+  orderId        String
+  sku            String
+  quantity       Int
+  actualSalePrice Float @map("actual_sale_price")
+  
+  // Relations
+  order   Orders   @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  variant Variants @relation(fields: [sku], references: [sku])
+  
+  createdAt DateTime @default(now())
+}
+
+// Financial Ledger
+model FinancesLedger {
+  transactionId   String            @id @default(cuid())
+  transactionName String            @map("transaction_name")
+  date           DateTime          @default(now())
+  type           TransactionType
+  moneyIn        Float             @map("money_in") @default(0)
+  moneyOut       Float             @map("money_out") @default(0)
+  orderId        String?
+  
+  // Relations
+  order Orders? @relation(fields: [orderId], references: [orderId])
+  
+  createdAt DateTime @default(now())
+}
+
+enum TransactionType {
+  REVENUE
+  COGS
+  MARKETING
+  RETURN_FEE
+  CURRENCY_PURCHASE
+  OTHER_INCOME
+  OTHER_EXPENSE
+}
+
+// User Management (Enhanced)
+model Users {
+  userId String @id @default(cuid())
+  name   String
+  email  String @unique
+  role   UserRole @default(ADMIN)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+// System Configuration
+model AppSettings {
+  settingId String @id @default(cuid())
+  key       String @unique
+  value     String
+  
+  updatedAt DateTime @updatedAt @default(now())
+}
